@@ -1,0 +1,12 @@
+data
+params
+model
+models
+log
+logs
+*.pt
+*.txt
+*.jpg
+*.yaml
+*.json
+*.ipynb

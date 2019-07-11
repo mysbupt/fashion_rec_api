@@ -1,5 +1,5 @@
-
 import sys
+import json
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -19,7 +19,7 @@ import datetime
 
 NOW = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 log_file = "./logs/finetune_%s" %(NOW)
-sys.stdout = open(log_file, "w")
+#sys.stdout = open(log_file, "w")
 
 
 if USE_TENSORBOARD:
@@ -42,10 +42,17 @@ count = 0
 class BinaryData(Dataset):
     def __init__(self, data_path="", mode="train"):
         self.imgs = []
-        for img in glob.glob(os.path.join(data_path, "pos/*")):
-            self.imgs.append({"path": img, "label": 1})
-        for img in glob.glob(os.path.join(data_path, "neg/*")):
-            self.imgs.append({"path": img, "label": 0})
+        cache_file_path = data_path + "cache_file.json"
+        if os.path.exists(cache_file_path):
+            self.imgs = json.load(open(cache_file_path))
+        else:
+            print("start load pos images: ")
+            for img in glob.glob(os.path.join(data_path, "pos/*")):
+                self.imgs.append({"path": img, "label": 1})
+            print("start load neg images: ")
+            for img in glob.glob(os.path.join(data_path, "neg/*")):
+                self.imgs.append({"path": img, "label": 0})
+            json.dump(self.imgs, open(cache_file_path, "w"))
 
         data_transforms = {
             'train': transforms.Compose([
@@ -75,7 +82,6 @@ class BinaryData(Dataset):
         return img, label
 
 
-
 def train_model(model, dset_loaders, dset_sizes, optimizer, lr_scheduler, num_epochs=10):
     since = time.time()
 
@@ -100,7 +106,7 @@ def train_model(model, dset_loaders, dset_sizes, optimizer, lr_scheduler, num_ep
 
             counter=0
             # Iterate over data.
-            for data in dset_loaders[phase]:
+            for i, data in enumerate(dset_loaders[phase]):
                 inputs, labels = data
                 if use_gpu:
                     inputs, labels = Variable(inputs.float().cuda()), Variable(labels.float().cuda())
@@ -119,6 +125,9 @@ def train_model(model, dset_loaders, dset_sizes, optimizer, lr_scheduler, num_ep
                 if phase == 'train':
                     loss.backward()
                     optimizer.step()
+                    if i % 100 == 1:
+                        print("epoch: %d, batch: %d, batch_size: %d, loss: " %(epoch, i, BATCH_SIZE), loss.item())
+                
                 running_loss += loss.item()
                 running_corrects += torch.sum(preds == labels.data)
             print('trying epoch loss')
@@ -154,18 +163,22 @@ def exp_lr_scheduler(optimizer, epoch, init_lr=BASE_LR, lr_decay_epoch=EPOCH_DEC
 
 def main():
     data_dir = DATA_DIR
+    print(datetime.datetime.now(), "start to initialize dataset")
     dsets = {x: BinaryData(os.path.join(data_dir, x), x) for x in ['train', 'val']}
-    dset_loaders = {x: DataLoader(dsets[x], batch_size=BATCH_SIZE, shuffle=True, num_workers=10) for x in ['train', 'val']}
+    dset_loaders = {x: DataLoader(dsets[x], batch_size=BATCH_SIZE, shuffle=True, num_workers=20) for x in ['train', 'val']}
     dset_sizes = {x: len(dsets[x]) for x in ['train', 'val']}
     
+    print(datetime.datetime.now(), "start to initialize model")
     model_ft = models.resnet18(pretrained=True)
     num_ftrs = model_ft.fc.in_features
     model_ft.fc = nn.Linear(num_ftrs, 1)
     
     if use_gpu:
         #criterion.cuda()
+        print("mv model to gpu")
         model_ft.cuda()
     
+    print("set optimizer")
     optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.01, momentum=0.9)
     model_ft = train_model(model_ft, dset_loaders, dset_sizes, optimizer_ft, exp_lr_scheduler, num_epochs=20)
     
@@ -174,4 +187,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print("start")
     main()

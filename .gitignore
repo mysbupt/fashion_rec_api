@@ -7,6 +7,8 @@ logs
 *.pt
 *.txt
 *.jpg
+*.png
 *.yaml
 *.json
 *.ipynb
+*.pyc

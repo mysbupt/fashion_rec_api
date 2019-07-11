@@ -2,7 +2,6 @@
 
 import os
 from flask import Flask, request, json
-from darknet import *
 
 import cv2 
 import numpy as np
@@ -16,8 +15,8 @@ from torchvision import transforms
 app = Flask(__name__)
 
 
-#model_ft = torch.load("./params/fine_tuned_best_model.pt")
-model_ft = torch.load("./params/fine_tuned_best_model_weight_2018-11-13 10:59:11.pt")
+model_ft = torch.load("./params/fine_tuned_best_model.pt")
+#model_ft = torch.load("./params/fine_tuned_best_model_weight_2019-07-10 20:58:56.pt")
 model_ft.cuda()
 
 

@@ -24,6 +24,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import coco_eval
 import csv_eval
+from datetime import datetime
 
 assert torch.__version__.split('.')[1] == '4'
 
@@ -55,7 +56,7 @@ def main(args=None):
 	else:
 		dataset_val = CSVDataset(train_file=parser.csv_val, class_list=parser.csv_classes, transform=transforms.Compose([Normalizer(), Resizer()]))
 
-	sampler = AspectRatioBasedSampler(dataset_train, batch_size=6, drop_last=False)
+	sampler = AspectRatioBasedSampler(dataset_train, batch_size=8, drop_last=False)
 	dataloader_train = DataLoader(dataset_train, num_workers=20, collate_fn=collater, batch_sampler=sampler)
 
 	sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
@@ -114,15 +115,22 @@ def main(args=None):
 			epoch_loss.append(float(loss))
 
 			if iter_num % 500 == 0:
-				print('Epoch: {} | Iteration: {} | Classification loss: {:1.5f} | Regression loss: {:1.5f} | Running loss: {:1.5f}'.format(epoch_num, iter_num, float(classification_loss), float(regression_loss), np.mean(loss_hist)))
+				print(datetime.now(), 'Epoch: {} | Iteration: {} | Classification loss: {:1.5f} | Regression loss: {:1.5f} | Running loss: {:1.5f}'.format(epoch_num, iter_num, float(classification_loss), float(regression_loss), np.mean(loss_hist)))
+				#if parser.dataset == 'csv' and parser.csv_val is not None and iter_num != 0:
+				#	print('Evaluating dataset')
+				#	mAP, overall_mAP = csv_eval.evaluate(dataset_val, retinanet)
+				#	retinanet.train()
+				#	retinanet.module.freeze_bn()
+				#	print("Epoch %d: overall mAP is: %f\n\n" %(epoch_num, overall_mAP))
+
 			del classification_loss
 			del regression_loss
 
-		if parser.dataset == 'csv' and parser.csv_val is not None:
-			print('Evaluating dataset')
-			mAP = csv_eval.evaluate(dataset_val, retinanet)
-			print("Epoch %d: mAP is: %f\n\n" %(epoch_num, mAP))
 		
+		print(datetime.now(), 'Evaluating dataset')
+		mAP, overall_mAP = csv_eval.evaluate(dataset_val, retinanet)
+		print(datetime.now(), "Epoch %d: overall mAP is: %f\n\n" %(epoch_num, overall_mAP))
+
 		scheduler.step(np.mean(epoch_loss))	
 		torch.save(retinanet.module, '{}_retinanet_{}.pt'.format(parser.dataset, epoch_num))
 

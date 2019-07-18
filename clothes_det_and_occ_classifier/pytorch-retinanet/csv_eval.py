@@ -230,9 +230,12 @@ def evaluate(
         average_precisions[label] = average_precision, num_annotations
     
     print('\nmAP:')
+    overall = []
     for label in range(generator.num_classes()):
         label_name = generator.label_to_name(label)
         print('{}: {}'.format(label_name, average_precisions[label][0]))
+        overall.append(average_precisions[label][0])
+    overall_mAP = sum(overall) / len(overall)
     
-    return average_precisions
+    return average_precisions, overall_mAP
 

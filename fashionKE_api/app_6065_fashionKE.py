@@ -127,8 +127,8 @@ def fashionKE():
     #print("occ_id: %d, occ: %s, occ_score: %f" %(occ_id, occ, occ_score))
 
     cat_ids = torch.argmax(cat_res[0, :num_box, :], dim=-1).cpu().numpy().tolist()
-    if num_box == 1:
-        cat_ids = [cat_ids]
+    #if num_box == 1:
+    #    cat_ids = [cat_ids]
     cats = [id_cat_map[cat_id] for cat_id in cat_ids]
     cat_scores = [torch.softmax(each_res, dim=-1)[cat_id].cpu().detach().numpy().tolist() for each_res, cat_id in zip(cat_res[0][0:num_box], cat_ids)]
     #print("cat_ids:", cat_ids)

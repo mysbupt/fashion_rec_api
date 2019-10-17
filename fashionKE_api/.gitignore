@@ -1,0 +1,12 @@
+data
+params
+log
+logs
+*.pt
+*.txt
+*.jpg
+*.png
+*.yaml
+*.json
+*.ipynb
+*.pyc

@@ -8,7 +8,9 @@ import sys
 import argparse
 import numpy as np
 import face_model
+from datetime import datetime
 
+from skin_detector import get_skin_color, get_color_name, get_rgb_name_file
 
 app = Flask(__name__)
 
@@ -21,6 +23,9 @@ parser.add_argument('--det', default=0, type=int, help='mtcnn or essh option, 0 
 args = parser.parse_args()
 model = face_model.FaceModel(args)
 
+color_name_file = 'color_name.txt'
+rgb_file = 'RGB.txt'
+rgb_list, name_dict = get_rgb_name_file(rgb_file, color_name_file)
 
 @app.route('/age_gender_estimation', methods=['POST'])
 def age_gender_estimation():
@@ -49,13 +54,23 @@ def age_gender_estimation():
     for _ in range(1):
         gender, age = model.get_ga(img_db)
 
+    #skin_color_res = []
+    #print("start cal skin color: ", datetime.now())
+    #for b in bbox:
+    #    face_img = cv2.rectangle(img, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), (0, 255, 0), 2)
+    #    skin_color_rgb = get_skin_color(face_img)
+    #    skin_color_name = get_color_name(rgb_list, name_dict, skin_color_rgb)
+    #    skin_color_res.append(skin_color_name)
+    #print("end of calculating skin color: ", datetime.now())
+
     if len(bbox) > 0:
         res["T_F"] = True
         res['result'] = {
             'bbox': bbox.tolist(), 
             'points': points.tolist(), 
             'gender': gender.tolist(), 
-            'age': age.tolist()
+            'age': age.tolist(),
+            #'skin_color': skin_color_res
         }
 
     return app.response_class(
